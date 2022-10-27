@@ -1,0 +1,1175 @@
+{
+	"counterparties": [],
+	"entity": "${entity}",
+    "dump2MADRE": false,
+	"compute": [
+	    {
+	    	"sub_folder_name": "${FX_subdir}",
+	    	"type": "XML.Sensitivities",
+	    	"prefix": "${batch_id}",
+	    	"parser": {"id": "Output.Sensitivities", "function": "parse_values_per_counterparty"},
+	    	"rename_scenario": "^(\\w*)",
+	    	"new_measures": {
+                "pnl_stock_cva_bilateral_contingent": "-(contingent_cva - contingent_dva)",
+                "pnl_fva_risk_free": "-(risky_funding_cost - 1 * risky_funding_benefit)"
+            },
+			"filter_list": {
+				"FX_UP": "([\\w.]*).UP",
+				"FX_DW": "([\\w.]*).DW"
+			},
+	    	"compute": {
+                "${entity}_CVA.csv": {
+					"FX": [
+						"(FX_UP__pnl_stock_cva_bilateral_contingent - FX_DW__pnl_stock_cva_bilateral_contingent)/0.02",
+						"(FX_UP__pnl_stock_cva_bilateral_contingent - Base__pnl_stock_cva_bilateral_contingent)/0.01",
+						"(- FX_DW__pnl_stock_cva_bilateral_contingent + Base__pnl_stock_cva_bilateral_contingent)/0.01"
+						],
+					"FX_GAMMA": [
+						"(FX_UP__pnl_stock_cva_bilateral_contingent + FX_DW__pnl_stock_cva_bilateral_contingent - 2 * Base__pnl_stock_cva_bilateral_contingent)/0.01"
+						]},
+				"${entity}_FVA.csv": {
+					"FX": [
+						"(FX_UP__pnl_fva_risk_free - FX_DW__pnl_fva_risk_free)/0.02",
+						"(FX_UP__pnl_fva_risk_free - Base__pnl_fva_risk_free)/0.01",
+						"(-FX_DW__pnl_fva_risk_free + Base__pnl_fva_risk_free)/0.01"
+					],
+					"FX_GAMMA": [
+						"(FX_UP__pnl_fva_risk_free + FX_DW__pnl_fva_risk_free - 2 * Base__pnl_fva_risk_free)/0.01"
+					]
+				}
+			}
+	    },
+		{
+            "sub_folder_name": "Projections",
+            "file_name": "${INFL_projection_filename}",
+	    	"type": "CSV.Sensitivities",
+			"sens_type": "INFL.PROJECTION",
+	    	"key": "COUNTERPARTY",
+            "index": "COUNTERPARTY",
+	    	"pandas_csv_arguments": {"sep": ","},
+            "prefix": "${batch_id}",
+	    	"new_measures": {
+                "pnl_stock_cva_bilateral_contingent": "-(contingent_cva - contingent_dva)",
+                "pnl_fva_risk_free": "-(risky_funding_cost - 1 * risky_funding_benefit)"
+            },
+	    	"values": {
+                "${entity}_CVA.csv": ["pnl_stock_cva_bilateral_contingent"],
+                "${entity}_FVA.csv": ["pnl_fva_risk_free"]
+            }
+	    },
+	    {
+	    	"sub_folder_name": "${CR_subdir}",
+	    	"type": "XML.Sensitivities",
+	    	"prefix": "${batch_id}",
+	    	"parser": {"id": "Output.Sensitivities", "function": "parse_values_per_counterparty"},
+            "rename_scenario": "^(\\w*)",
+	    	"new_measures": {
+                "pnl_stock_cva_bilateral_contingent": "-(contingent_cva - contingent_dva)",
+                "pnl_fva_risk_free": "-(risky_funding_cost - 1 * risky_funding_benefit)"
+            },
+	    	"compute": {
+                "${entity}_CVA.csv": {"CR": "(scenario__pnl_stock_cva_bilateral_contingent - Base__pnl_stock_cva_bilateral_contingent)"},
+                "${entity}_FVA.csv": {"CR": "(scenario__pnl_fva_risk_free - Base__pnl_fva_risk_free)"}
+            }
+	    },
+	    {
+	    	"sub_folder_name": "${FX_subdir}",
+	    	"key_type": "weak",
+	    	"type": "XML.AdditionalInfo",
+	    	"prefix": "${batch_id}",
+	    	"parser": "Input.AggregationInfo",
+	    	"parsing_functions": {"credit_curve": "parse_credit_info", "recovery": "parse_recovery_rates"},
+            "file": ["${entity}_CVA.csv", "${entity}_FVA.csv"]
+	    },
+	    {
+	    	"sub_folder_name": "${CR_subdir}",
+	    	"key_type": "weak",
+	    	"type": "XML.AdditionalInfo",
+	    	"prefix": "${batch_id}",
+	    	"parser": "Output.Sensitivities",
+	    	"parsing_functions": {"bbva_credit_curve": "parse_bbva_credit_curve"},
+            "file": ["${entity}_CVA.csv", "${entity}_FVA.csv"]
+	    },
+	    {
+            "sub_folder_name": "Projections",
+            "file_name": "${IR_projection_filename}",
+	    	"type": "CSV.Sensitivities",
+	    	"key": "COUNTERPARTY",
+            "index": "COUNTERPARTY",
+	    	"pandas_csv_arguments": {"sep": ","},
+            "prefix": "${batch_id}",
+	    	"new_measures": {
+                "pnl_stock_cva_bilateral_contingent": "-(contingent_cva - contingent_dva)",
+                "pnl_fva_risk_free": "-(risky_funding_cost - 1 * risky_funding_benefit)"
+            },
+	    	"values": {
+                "${entity}_CVA.csv": ["pnl_stock_cva_bilateral_contingent"],
+                "${entity}_FVA.csv": ["pnl_fva_risk_free"]
+            }
+	    },
+	    {
+            "sub_folder_name": "Projections",
+	    	"file_name": "${VEGA_projection_filename}",
+            "type": "CSV.Sensitivities",
+            "sens_type": "VEGA.PROJECTION",
+	    	"key": "COUNTERPARTY",
+            "index": "COUNTERPARTY",
+	    	"pandas_csv_arguments": {"sep": ","},
+	    	"prefix": "${batch_id}",		
+	    	"new_measures": {
+                "pnl_stock_cva_bilateral_contingent": "-(contingent_cva - contingent_dva)",
+               "pnl_fva_risk_free": "-(risky_funding_cost - 1 * risky_funding_benefit)"
+            },
+	    	"values": {
+                "${entity}_CVA.csv": ["pnl_stock_cva_bilateral_contingent"],
+                "${entity}_FVA.csv": ["pnl_fva_risk_free"]
+            }
+	    },
+	    {
+            "sub_folder_name": "Projections",
+	    	"file_name": "${CR_projection_filename}",
+            "type": "CSV.Sensitivities",
+	    	"sens_type": "CR.PROJECTION",
+            "key": "COUNTERPARTY",
+            "index": "COUNTERPARTY",
+            "pandas_csv_arguments": {"sep": ","},
+	    	"prefix": "${batch_id}",
+	    	"new_measures": {
+                "pnl_stock_cva_bilateral_contingent": "-(contingent_cva - contingent_dva)",
+                "pnl_fva_risk_free": "-(risky_funding_cost - 1 * risky_funding_benefit)"
+            },
+	    	"values": {
+                "${entity}_CVA.csv": ["pnl_stock_cva_bilateral_contingent"],
+                "${entity}_FVA.csv": ["pnl_fva_risk_free"]
+            }
+	    },
+		{
+            "sub_folder_name": "${sim_subdir}",
+            "file_name": "${batch_id}.ExcelDotNet.AggregationInfoExtraction.CreditInfo.csv",
+            "type": "CSV.Info",
+            "key_type": "weak",
+            "key": "id",
+            "index": "id",
+            "prefix": "${batch_id}",
+            "pandas_csv_arguments": {"sep": ","},
+            "values": {
+                "${entity}_CVA.csv": ["grupo", "geografia", "sector", "ambito"],
+                "${entity}_FVA.csv": ["grupo", "geografia", "sector", "ambito"]
+            }
+		},
+	    {
+	    	"sub_folder_name": "${sim_subdir}",
+            "type": "XML.Valuation",
+	    	"prefix": "${batch_id}",
+	    	"parser": "Output.Valuation",
+	    	"parsing_functions": {"deals_npv": "parse_npvs_by_counterparties"},
+	    	"new_measures": {
+                "pnl_stock_cva_bilateral_contingent": "-(contingent_cva - contingent_dva)",
+                "pnl_fva_risk_free": "-(funding_cost - funding_benefit)"
+            },
+            "values": {
+                "${entity}_CVA.csv": [
+                    "pnl_stock_cva_bilateral_contingent",
+                    "contingent_cva",
+                    "contingent_dva",
+                    "npv_data_base",
+                    "npv_booking_systems",
+	    	        "risky_funding_benefit",
+                    "risky_funding_cost",
+                    "pnl_fva_risk_free",
+                    "funding_benefit",
+                    "funding_cost"
+                ],
+                "${entity}_FVA.csv": [
+                    "pnl_stock_cva_bilateral_contingent",
+                    "contingent_cva",
+                    "contingent_dva",
+                    "npv_data_base",
+                    "npv_booking_systems",
+	    	        "risky_funding_benefit",
+                    "risky_funding_cost",
+                    "pnl_fva_risk_free",
+                    "funding_benefit",
+                    "funding_cost"
+                ]
+            }
+	    },
+		
+		{
+            "sub_folder_name": "${PNLVAR_subdir}",
+	    	"key_type": "weak",
+            "type": "XML.Sensitivities",
+	    	"prefix": "${batch_id}",
+            "parser": {"id": "Output.Sensitivities", "function": "parse_values_per_counterparty"},
+            "rename_scenario": "^(\\w*)",
+            "new_measures": {
+                "pnl_stock_cva_bilateral_contingent": "-(contingent_cva - contingent_dva)",
+                "pnl_fva_risk_free": "-(risky_funding_cost - 1 * risky_funding_benefit)"
+            },
+            "filter_list": {
+                "SCENARIO": "(.+).PNLVAR"
+            },
+            "compute": {
+                "${entity}_CVA.csv": {
+                    "METRICS": [
+                        "(SCENARIO__pnl_stock_cva_bilateral_contingent)"
+                        ]
+                    },
+                "${entity}_FVA.csv": {
+                    "METRICS": [
+                        "(SCENARIO__pnl_fva_risk_free)"
+                    ]
+                }
+            }    
+        }
+		
+		
+    ],
+	"MADRE_json_output": {
+		"inner_info": [],
+		"attributes": ["Geography", "Group", "Scope", "credit_curve", "recovery"],
+		"measures": [
+            "contingent_cva",
+            "contingent_dva",
+            "pnl_stock_cva_bilateral_contingent",
+            "funding_benefit",
+            "funding_cost",
+            "pnl_fva_risk_free",
+            "npv_data_base"
+        ],
+		"ccy": {
+			"measures": "EUR",
+			"sensitivities": {
+				"CR.SHIFT": "EUR",
+				"IR.SHIFT": "EUR",
+				"FX.SHIFT": "EUR"
+			}
+		},
+		"filter_sensitivities": ["BBVA.DV0", "CTPY.DV0"],
+		"murex_translation_for_parallel_shift": {
+			"EUR.SWP_05Y": {"curve": "EUR STD 3M"},
+			"USD.SWP_05Y": {"curve": "USD STD 3M"},
+			"UDI.SWP_05Y": {"curve": "UDI STD 3M"},
+			"MXN.SWP_05Y": {"curve": "MXN STD 3M"}
+		},
+		"default_translation": {
+			"().+\\.(.+)_CTPY_CDS_(\\d\\dY)": {
+				"generator": 0,
+				"label": 1,
+				"maturity": 2,
+				"type": 0
+			},
+			"().+\\.(.+)_BBVA_CDS_(\\d\\dY)": {
+				"generator": 0,
+				"label": 1,
+				"maturity": 2,
+				"type": 0
+			}
+		},
+		"murex_translation": {
+			"CAD.IRS_05Y": {
+				"label": "CAD STD 3M",
+				"type": "Swap",
+				"generator": "CAD LIBOR 6M/3M",
+				"maturity": "5Y"
+			},
+			"EUR.IRS_01Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"EUR.IRS_02Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"EUR.IRS_03Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"EUR.IRS_05Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"EUR.IRS_10Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"EUR.IRS_15Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"EUR.IRS_20Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"EUR.IRS_30Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"EONIA.IRS_01Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"EONIA.IRS_02Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"EONIA.IRS_03Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"EONIA.IRS_05Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"EONIA.IRS_10Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"EONIA.IRS_15Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"EONIA.IRS_20Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"EONIA.IRS_30Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"EUR1M.IRS_01Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"EUR1M.IRS_02Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"EUR1M.IRS_03Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"EUR1M.IRS_05Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"EUR1M.IRS_10Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"EUR1M.IRS_15Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"EUR1M.IRS_20Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"EUR1M.IRS_30Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"EUR3M.IRS_01Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"EUR3M.IRS_02Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"EUR3M.IRS_03Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"EUR3M.IRS_05Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"EUR3M.IRS_10Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"EUR3M.IRS_15Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"EUR3M.IRS_20Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"EUR3M.IRS_30Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"EUR6M.IRS_01Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"EUR6M.IRS_02Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"EUR6M.IRS_03Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"EUR6M.IRS_05Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"EUR6M.IRS_10Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"EUR6M.IRS_15Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"EUR6M.IRS_20Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"EUR6M.IRS_30Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"EUR12M.IRS_01Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"EUR12M.IRS_02Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"EUR12M.IRS_03Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"EUR12M.IRS_05Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"EUR12M.IRS_10Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"EUR12M.IRS_15Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"EUR12M.IRS_20Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"EUR12M.IRS_30Y": {
+				"label": "EUR STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"FUND.IRS_01Y": {
+				"label": "FUND STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"FUND.IRS_02Y": {
+				"label": "FUND STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"FUND.IRS_03Y": {
+				"label": "FUND STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"FUND.IRS_05Y": {
+				"label": "FUND STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"FUND.IRS_10Y": {
+				"label": "FUND STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"FUND.IRS_15Y": {
+				"label": "FUND STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"FUND.IRS_20Y": {
+				"label": "FUND STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"FUND.IRS_30Y": {
+				"label": "FUND STD 3M",
+				"type": "Swap",
+				"generator": "EURIBOR 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"GBP.IRS_05Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "5Y"
+			},
+			"GBP.IRS_10Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "10Y"
+			},
+			"GBP.IRS_20Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "20Y"
+			},
+			"SONIA.IRS_05Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "5Y"
+			},
+			"SONIA.IRS_10Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "10Y"
+			},
+			"SONIA.IRS_20Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "20Y"
+			},
+			"GBP1M.IRS_05Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "5Y"
+			},
+			"GBP1M.IRS_10Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "10Y"
+			},
+			"GBP1M.IRS_20Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "20Y"
+			},
+			"GBP3M.IRS_05Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "5Y"
+			},
+			"GBP3M.IRS_10Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "10Y"
+			},
+			"GBP3M.IRS_20Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "20Y"
+			},
+			"GBP6M.IRS_05Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "5Y"
+			},
+			"GBP6M.IRS_10Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "10Y"
+			},
+			"GBP6M.IRS_20Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "20Y"
+			},
+			"GBP12M.IRS_05Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "5Y"
+			},
+			"GBP12M.IRS_10Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "10Y"
+			},
+			"GBP12M.IRS_20Y": {
+				"label": "GBP STD 3M",
+				"type": "Swap",
+				"generator": "GBP LIBOR 1Y/3M",
+				"maturity": "20Y"
+			},
+			"JPY.IRS_05Y": {
+				"label": "JPY STD 3M",
+				"type": "Swap",
+				"generator": "JPY LIB 6M/3M*",
+				"maturity": "5Y"
+			},
+			"JPY3M.IRS_05Y": {
+				"label": "JPY STD 3M",
+				"type": "Swap",
+				"generator": "JPY LIB 6M/3M*",
+				"maturity": "5Y"
+			},
+			"JPY6M.IRS_05Y": {
+				"label": "JPY STD 3M",
+				"type": "Swap",
+				"generator": "JPY LIB 6M/3M*",
+				"maturity": "5Y"
+			},
+			"PLN.IRS_05Y": {
+				"label": "PLN :Std",
+				"type": "Swap",
+				"generator": "PLN WIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"USD.IRS_01Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"USD.IRS_02Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"USD.IRS_03Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"USD.IRS_05Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"USD.IRS_10Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"USD.IRS_15Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"USD.IRS_20Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"USD.IRS_30Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"OIS.IRS_01Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"OIS.IRS_02Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"OIS.IRS_03Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"OIS.IRS_05Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"OIS.IRS_10Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"OIS.IRS_15Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"OIS.IRS_20Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"OIS.IRS_30Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"USD1M.IRS_01Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"USD1M.IRS_02Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"USD1M.IRS_03Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"USD1M.IRS_05Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"USD1M.IRS_10Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"USD1M.IRS_15Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"USD1M.IRS_20Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"USD1M.IRS_30Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"USD3M.IRS_01Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"USD3M.IRS_02Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"USD3M.IRS_03Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"USD3M.IRS_05Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"USD3M.IRS_10Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"USD3M.IRS_15Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"USD3M.IRS_20Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"USD3M.IRS_30Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"USD6M.IRS_01Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "1Y"
+			},
+			"USD6M.IRS_02Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "2Y"
+			},
+			"USD6M.IRS_03Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "3Y"
+			},
+			"USD6M.IRS_05Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			"USD6M.IRS_10Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "10Y"
+			},
+			"USD6M.IRS_15Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "15Y"
+			},
+			"USD6M.IRS_20Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "20Y"
+			},
+			"USD6M.IRS_30Y": {
+				"label": "USD STD 3M",
+				"type": "Swap",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "30Y"
+			},
+			".USD_EUR_2Y": {
+				"label": "EUR/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "2Y"
+			},			
+			".USD_EUR_5Y": {
+				"label": "EUR/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			".USD_EUR_10Y": {
+				"label": "EUR/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "10Y"
+			},
+			".USD_EUR_20Y": {
+				"label": "EUR/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "20Y"
+			},
+			".USD_EUR_30Y": {
+				"label": "EUR/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "30Y"
+			},
+			".USD_GBP_2Y": {
+				"label": "GBP/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "2Y"
+			},			
+			".USD_GBP_5Y": {
+				"label": "GBP/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			".USD_GBP_10Y": {
+				"label": "GBP/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "10Y"
+			},
+			".USD_GBP_20Y": {
+				"label": "GBP/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "20Y"
+			},
+			".USD_GBP_30Y": {
+				"label": "GBP/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "30Y"
+			},
+			".USD_JPY_2Y": {
+				"label": "JPY/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "2Y"
+			},			
+			".USD_JPY_5Y": {
+				"label": "JPY/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			".USD_JPY_10Y": {
+				"label": "JPY/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "10Y"
+			},
+			".USD_JPY_20Y": {
+				"label": "JPY/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "20Y"
+			},
+			".USD_JPY_30Y": {
+				"label": "JPY/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "30Y"
+			},
+			".USD_MXN_2Y": {
+				"label": "MXN/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "2Y"
+			},			
+			".USD_MXN_5Y": {
+				"label": "MXN/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			".USD_MXN_10Y": {
+				"label": "MXN/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "10Y"
+			},
+			".USD_MXN_20Y": {
+				"label": "MXN/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "20Y"
+			},
+			".USD_MXN_30Y": {
+				"label": "MXN/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "30Y"
+			},
+			".USD_CHF_2Y": {
+				"label": "CHF/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "2Y"
+			},			
+			".USD_CHF_5Y": {
+				"label": "CHF/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "5Y"
+			},
+			".USD_CHF_10Y": {
+				"label": "CHF/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "10Y"
+			},
+			".USD_CHF_20Y": {
+				"label": "CHF/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "20Y"
+			},
+			".USD_CHF_30Y": {
+				"label": "CHF/USD 3M_3MTM",
+				"type": "CS",
+				"generator": "USD LIB 1Y/3M*",
+				"maturity": "30Y"
+			},
+			"EUR_USD": "EUR-USD",
+			"EUR_GBP": "EUR-GBP",
+			"EUR_JPY": "EUR-JPY",
+			"EUR_CHF": "EUR-CHF",
+			"EUR_ARS": "EUR-ARS",
+			"EUR_AUD": "EUR-AUD",
+			"EUR_BGN": "EUR-BGN",
+			"EUR_BRL": "EUR-BRL",
+			"EUR_CAD": "EUR-CAD",
+			"EUR_CLF": "EUR-CLF",
+			"EUR_CLP": "EUR-CLP",
+			"EUR_CNH": "EUR-CNH",
+			"EUR_CNY": "EUR-CNY",
+			"EUR_COP": "EUR-COP",
+			"EUR_CZK": "EUR-CZK",
+			"EUR_DKK": "EUR-DKK",
+			"EUR_HKD": "EUR-HKD",
+			"EUR_HUF": "EUR-HUF",
+			"EUR_IDR": "EUR-IDR",
+			"EUR_INR": "EUR-INR",
+			"EUR_KRW": "EUR-KRW",
+			"EUR_MAD": "EUR-MAD",
+			"EUR_MXN": "EUR-MXN",
+			"EUR_MYR": "EUR-MYR",
+			"EUR_NOK": "EUR-NOK",
+			"EUR_NZD": "EUR-NZD",
+			"EUR_PEN": "EUR-PEN",
+			"EUR_PHP": "EUR-PHP",
+			"EUR_PLN": "EUR-PLN",
+			"EUR_RON": "EUR-RON",
+			"EUR_RUB": "EUR-RUB",
+			"EUR_SEK": "EUR-SEK",
+			"EUR_SGD": "EUR-SGD",
+			"EUR_THB": "EUR-THB",
+			"EUR_TRY": "EUR-TRY",
+			"EUR_TWD": "EUR-TWD",
+			"EUR_UDI": "EUR-UDI",
+			"EUR_ZAR": "EUR-ZAR",
+			"EUR_SAR": "EUR-SAR"
+		}
+	}
+}
